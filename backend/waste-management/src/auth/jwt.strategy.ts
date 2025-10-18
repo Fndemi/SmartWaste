@@ -2,7 +2,6 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy, StrategyOptions } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
-import { UsersService } from '../users/users.service'; // ✅ Add this import
 
 export interface JwtPayload {
   sub: string; // user id
@@ -14,12 +13,17 @@ export interface JwtPayload {
   exp?: number;
 }
 
+export interface ValidatedUser {
+  _id: string;
+  userId: string;
+  email?: string;
+  name?: string;
+  role: string;
+}
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(
-    private readonly config: ConfigService,
-    private readonly usersService: UsersService, // ✅ Inject UsersService
-  ) {
+  constructor(private readonly config: ConfigService) {
     const secret = config.get<string>('JWT_SECRET');
     if (!secret) {
       throw new Error('JWT_SECRET is missing. Add it to your .env');
@@ -34,19 +38,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super(opts);
   }
 
-  async validate(payload: JwtPayload) {
-    // 🚫 Check token type (optional but good)
+  async validate(payload: JwtPayload): Promise<ValidatedUser> {
+    // Validate token type
     if (payload.type && payload.type !== 'access') {
       throw new UnauthorizedException('Invalid token type');
     }
 
-    // ✅ Fetch the user only once here
-    const user = await this.usersService.findById(payload.sub);
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    // ✅ Return the user object — this becomes req.user
-    return user;
+    // Return user info directly from JWT payload
+    // This becomes req.user - no database call needed!
+    return {
+      _id: payload.sub,
+      userId: payload.sub,
+      email: payload.email,
+      name: payload.name,
+      role: payload.role,
+    };
   }
 }

@@ -14,6 +14,7 @@ export interface CurrentUserType {
  */
 export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): CurrentUserType => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const request = ctx.switchToHttp().getRequest();
 
     // Safely extract and normalize user information
