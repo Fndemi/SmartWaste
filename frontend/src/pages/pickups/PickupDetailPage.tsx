@@ -6,7 +6,7 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { RealTimeMap } from '../../components/map/RealTimeMap';
-import { useLocation } from '../../contexts/LocationContext';
+import { useLocation } from '../../hooks/useLocation';
 import { type Pickup } from '../../types';
 import { Package, Clock, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';

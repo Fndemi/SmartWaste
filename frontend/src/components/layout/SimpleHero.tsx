@@ -1,4 +1,4 @@
-import { ArrowRight, Play, CheckCircle } from 'lucide-react';
+import { ArrowRight,  CheckCircle } from 'lucide-react';
 
 export function SimpleHero() {
   return (
@@ -41,10 +41,10 @@ export function SimpleHero() {
                 Get Started
                 <ArrowRight className="w-5 h-5" />
               </button>
-              <button className="border-2 border-white/30 text-white font-semibold text-lg px-8 py-4 rounded-lg transition-all hover:bg-white/10 flex items-center justify-center gap-2">
+              {/* <button className="border-2 border-white/30 text-white font-semibold text-lg px-8 py-4 rounded-lg transition-all hover:bg-white/10 flex items-center justify-center gap-2">
                 <Play className="w-5 h-5" />
                 Watch Demo
-              </button>
+              </button> */}
             </div>
 
             {/* Stats */}

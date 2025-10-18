@@ -49,6 +49,23 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
+// Profile types
+export interface UpdateProfileRequest {
+  name?: string;
+  email?: string;
+}
+
+export interface ProfileFormData {
+  name: string;
+  email: string;
+}
+
+export interface PasswordFormData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 // Pickup types
 export type WasteType = 'organic' | 'plastic' | 'metal' | 'paper' | 'glass' | 'e_waste' | 'other';
 
@@ -226,4 +243,30 @@ export interface Notification {
   pickupId: string;
   metadata?: Record<string, unknown>;
   createdAt: string;
+}
+
+// Common utility types
+export type LoadingState = 'idle' | 'loading' | 'success' | 'error';
+
+export interface AsyncState<T> {
+  data: T | null;
+  loading: boolean;
+  error: string | null;
+}
+
+// Navigation types
+export interface NavigationItem {
+  name: string;
+  href: string;
+  icon: string;
+}
+
+// Theme types
+export type Theme = 'light' | 'dark';
+
+// Error types
+export interface ApiError {
+  message: string;
+  status?: number;
+  code?: string;
 }

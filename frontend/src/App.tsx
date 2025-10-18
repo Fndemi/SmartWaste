@@ -10,11 +10,11 @@ import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { CreatePickupPage } from './pages/pickups/CreatePickupPage';
 import { PickupsPage } from './pages/pickups/PickupsPage';
 import { PickupDetailPage } from './pages/pickups/PickupDetailPage';
-import { AIAssistantPage } from './pages/ai/AIAssistantPage';
 import { FacilitiesPage } from './pages/facilities/FacilitiesPage';
 import { LoadingPage } from './components/ui/LoadingSpinner';
 import { HomePage } from './pages/HomePage';
 import { NotificationsPage } from './pages/notifications/NotificationsPage';
+import { ProfilePage } from './pages/profile/ProfilePage';
 
 function AppRoutes() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -82,19 +82,19 @@ function AppRoutes() {
       />
 
       <Route
-        path="/ai-assistant"
+        path="/notifications"
         element={
           <ProtectedRoute>
-            <AIAssistantPage />
+            <NotificationsPage />
           </ProtectedRoute>
         }
       />
 
       <Route
-        path="/notifications"
+        path="/profile"
         element={
           <ProtectedRoute>
-            <NotificationsPage />
+            <ProfilePage />
           </ProtectedRoute>
         }
       />

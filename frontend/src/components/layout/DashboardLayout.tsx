@@ -3,27 +3,27 @@ import { Link, useNavigate } from 'react-router-dom';
 import { LogOut, User, Bell, Menu, X } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../contexts/AuthContext';
-import { type UserRole } from '../../types';
+import { type UserRole, type NavigationItem } from '../../types';
+import { apiService } from '../../services/api';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-const navigationItems = [
+const navigationItems: NavigationItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: '📊' },
   { name: 'Pickups', href: '/pickups', icon: '🗑️' },
   { name: 'Facilities', href: '/facilities', icon: '🏭' },
-  { name: 'AI Assistant', href: '/ai-assistant', icon: '🤖' },
 ];
 
 const roleBasedNavigation: Record<UserRole, string[]> = {
-  HOUSEHOLD: ['Dashboard', 'Pickups', 'AI Assistant'],
-  SME: ['Dashboard', 'Pickups', 'AI Assistant'],
+  HOUSEHOLD: ['Dashboard', 'Pickups'],
+  SME: ['Dashboard', 'Pickups'],
   DRIVER: ['Dashboard', 'Pickups'],
   RECYCLER: ['Dashboard', 'Facilities', 'Pickups'],
   COUNCIL: ['Dashboard', 'Pickups', 'Facilities'],
-  ADMIN: ['Dashboard', 'Pickups', 'Facilities', 'AI Assistant'],
-  USER: ['Dashboard', 'Pickups', 'AI Assistant'],
+  ADMIN: ['Dashboard', 'Pickups', 'Facilities'],
+  USER: ['Dashboard', 'Pickups'],
   COLLECTOR: ['Dashboard', 'Pickups'],
 };
 
@@ -35,20 +35,24 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   // Poll unread notifications for drivers (realtime)
   useEffect(() => {
-    let interval: NodeJS.Timeout | undefined;
+    let interval: number | undefined;
     const fetchUnread = async () => {
       try {
         const res = await apiService.getUnreadCount();
-        setUnreadCount(res.data.data.unreadCount || 0);
+        setUnreadCount(res.data.data?.unreadCount || 0);
       } catch {
         setUnreadCount(0);
       }
     };
     fetchUnread();
     if (user?.role === 'DRIVER') {
-      interval = setInterval(fetchUnread, 5000); // Poll every 5s for drivers
+      interval = window.setInterval(fetchUnread, 5000); // Poll every 5s for drivers
     }
-    return () => interval && clearInterval(interval);
+    return () => {
+      if (interval !== undefined) {
+        window.clearInterval(interval);
+      }
+    };
   }, [user?.role]);
 
   const handleLogout = async () => {
@@ -65,7 +69,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     <div className="min-h-screen bg-ink-50 dark:bg-ink-900 flex">
       {/* Desktop sidebar */}
       <div className="hidden lg:flex lg:flex-shrink-0">
-        <div className={`flex flex-col h-screen transition-all duration-200 bg-white dark:bg-ink-800 border-r border-ink-200 dark:border-ink-700 ${sidebarCollapsed ? 'w-20' : 'w-64'}`}> 
+        <div className={`flex flex-col h-screen transition-all duration-200 bg-white dark:bg-ink-800 border-r border-ink-200 dark:border-ink-700 ${sidebarCollapsed ? 'w-20' : 'w-64'}`}>
           <div className="flex items-center justify-between px-4 py-4 border-b border-ink-200 dark:border-ink-700">
             <h1 className={`text-xl font-bold text-ink-900 dark:text-ink-100 transition-all duration-200 ${sidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}>WasteVortex</h1>
             <button
@@ -120,7 +124,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </button>
               <div className="ml-3 relative">
                 <div className="flex items-center space-x-3">
-                  <div className="flex items-center space-x-2">
+                  <Link to="/profile" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
                     <div className="h-9 w-9 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center">
                       <User className="h-5 w-5 text-brand-600 dark:text-brand-400" />
                     </div>
@@ -128,7 +132,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       <div className="text-base font-medium text-ink-900 dark:text-ink-100">{user?.name}</div>
                       <div className="text-xs text-ink-600 dark:text-ink-400 capitalize">{user?.role?.toLowerCase()}</div>
                     </div>
-                  </div>
+                  </Link>
                   <Button
                     variant="outline"
                     size="sm"

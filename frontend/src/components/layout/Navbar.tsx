@@ -72,9 +72,14 @@ export function Navbar() {
             </Link>
           )}
           {user && (
-            <Link to="/dashboard" className="btn-primary py-1.5 px-3">
-              Dashboard
-            </Link>
+            <>
+              <Link to="/dashboard" className="btn-primary py-1.5 px-3">
+                Dashboard
+              </Link>
+              <Link to="/profile" className="text-ink-700 hover:text-ink-900 dark:text-ink-200 dark:hover:text-white">
+                Profile
+              </Link>
+            </>
           )}
         </nav>
 
@@ -110,9 +115,14 @@ export function Navbar() {
               </Link>
             )}
             {user && (
-              <Link to="/dashboard" onClick={() => setOpen(false)} className="btn-primary py-2 px-3 w-full text-center">
-                Dashboard
-              </Link>
+              <>
+                <Link to="/dashboard" onClick={() => setOpen(false)} className="btn-primary py-2 px-3 w-full text-center">
+                  Dashboard
+                </Link>
+                <Link to="/profile" onClick={() => setOpen(false)} className="text-ink-700">
+                  Profile
+                </Link>
+              </>
             )}
             <button
               type="button"

@@ -51,36 +51,50 @@ class ApiService {
     );
 
     // Response interceptor to handle token refresh
-    this.api.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
-        
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true;
-          
-          try {
-            const refreshToken = localStorage.getItem('refreshToken');
-            if (refreshToken) {
-              const response = await this.refreshToken(refreshToken);
-              localStorage.setItem('accessToken', response.data.accessToken);
-              localStorage.setItem('refreshToken', response.data.refreshToken);
-              
-              // Retry original request
-              originalRequest.headers.Authorization = `Bearer ${response.data.accessToken}`;
-              return this.api(originalRequest);
-            }
-          } catch {
-            // Refresh failed, redirect to login
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            window.location.href = '/login';
-          }
-        }
-        
+  // Response interceptor to handle token refresh
+this.api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // Check if error is 401 and we haven't already tried to refresh
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      const refreshToken = localStorage.getItem('refreshToken');
+      
+      // If no refresh token, don't attempt refresh
+      if (!refreshToken) {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         return Promise.reject(error);
       }
-    );
+      
+      try {
+        const response = await this.refreshToken(refreshToken);
+        localStorage.setItem('accessToken', response.data.accessToken);
+        localStorage.setItem('refreshToken', response.data.refreshToken);
+        
+        // Retry original request with new token
+        originalRequest.headers.Authorization = `Bearer ${response.data.accessToken}`;
+        return this.api(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed - clear tokens and reject
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        
+        // Only redirect if we're not already on login page
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+        
+        return Promise.reject(refreshError);
+      }
+    }
+    
+    return Promise.reject(error);
+  }
+);
   }
 
   // Authentication endpoints

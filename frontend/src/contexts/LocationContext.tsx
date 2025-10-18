@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, type ReactNode } from 'react';
 
 interface Location {
   lat: number;
@@ -17,6 +17,8 @@ interface LocationContextType {
 
 const LocationContext = createContext<LocationContextType | undefined>(undefined);
 
+export { LocationContext };
+
 interface LocationProviderProps {
   children: ReactNode;
 }
@@ -34,7 +36,7 @@ export function LocationProvider({ children }: LocationProviderProps) {
         const permission = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
         setPermissionStatus(permission.state);
         return permission.state;
-      } catch (err) {
+      } catch {
         console.warn('Permission API not supported');
         return 'granted'; // Assume granted if API not available
       }
@@ -133,10 +135,3 @@ export function LocationProvider({ children }: LocationProviderProps) {
   );
 }
 
-export function useLocation() {
-  const context = useContext(LocationContext);
-  if (context === undefined) {
-    throw new Error('useLocation must be used within a LocationProvider');
-  }
-  return context;
-}

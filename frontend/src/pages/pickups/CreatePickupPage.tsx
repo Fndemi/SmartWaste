@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import * as yup from 'yup';
 import { useNavigate } from 'react-router-dom';
 import { Upload, MapPin, Package, Camera } from 'lucide-react';
 import { AddressAutocomplete } from '../../components/map/AddressAutocomplete';
@@ -12,17 +10,6 @@ import { Textarea } from '../../components/ui/Input';
 import { apiService } from '../../services/api';
 import { type WasteType } from '../../types';
 import toast from 'react-hot-toast';
-
-const pickupSchema = yup.object({
-  wasteType: yup.string().oneOf(['organic', 'plastic', 'metal', 'paper', 'glass', 'e_waste', 'other']).required('Waste type is required'),
-  estimatedWeightKg: yup.number().min(0.1, 'Weight must be at least 0.1 kg').required('Estimated weight is required'),
-  description: yup.string().max(500, 'Description must be less than 500 characters').notRequired(),
-  address: yup.string().min(5, 'Please provide an address').required('Address is required'),
-  lat: yup.number().notRequired(),
-  lng: yup.number().notRequired(),
-});
-
-// Using any in useForm below for simplicity; strong typing can be added later.
 
 const wasteTypes: { value: WasteType; label: string; description: string; icon: string }[] = [
   { value: 'organic', label: 'Organic Waste', description: 'Food scraps, garden waste', icon: '🍎' },
@@ -56,9 +43,7 @@ export function CreatePickupPage() {
     formState: { errors },
     setValue,
     watch,
-  } = useForm<CreatePickupForm>({
-    resolver: yupResolver(pickupSchema),
-  });
+  } = useForm<CreatePickupForm>();
 
   const selectedWasteType = watch('wasteType');
 
@@ -100,12 +85,15 @@ export function CreatePickupPage() {
 
     setIsSubmitting(true);
     try {
-      const { image: _image, ...pickupData } = data;
-      // Ensure required fields match API type by defaulting coords to 0 if missing
+      // Extract only the fields we need for the API call
+      const { wasteType, estimatedWeightKg, description, address, lat, lng } = data;
       const payload = {
-        ...pickupData,
-        lat: pickupData.lat ?? 0,
-        lng: pickupData.lng ?? 0,
+        wasteType,
+        estimatedWeightKg,
+        description,
+        address,
+        lat: lat ?? 0,
+        lng: lng ?? 0,
       };
       await apiService.createPickup(payload, selectedImage);
       toast.success('Pickup request created successfully!');

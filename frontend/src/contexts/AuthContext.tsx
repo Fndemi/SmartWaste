@@ -88,24 +88,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check for existing token on app load
   useEffect(() => {
+    let isMounted = true; // Prevent state updates if component unmounts
+
     const checkAuth = async () => {
       const token = localStorage.getItem('accessToken');
-      if (token) {
-        try {
-          const response = await apiService.getCurrentUser();
+      const refreshToken = localStorage.getItem('refreshToken');
+      
+      // If no tokens exist, just set loading to false
+      if (!token || !refreshToken) {
+        if (isMounted) {
+          dispatch({ type: 'AUTH_FAILURE', payload: 'No token found' });
+        }
+        return;
+      }
+
+      try {
+        const response = await apiService.getCurrentUser();
+        if (isMounted) {
           dispatch({ type: 'AUTH_SUCCESS', payload: response.data });
-        } catch (error) {
+        }
+      } catch (error: any) {
+        // If we get here, token refresh also failed (handled by interceptor)
+        // Clean up and set auth failure
+        if (isMounted) {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           dispatch({ type: 'AUTH_FAILURE', payload: 'Session expired' });
         }
-      } else {
-        dispatch({ type: 'AUTH_FAILURE', payload: 'No token found' });
       }
     };
 
     checkAuth();
-  }, []);
+
+    return () => {
+      isMounted = false; // Cleanup flag
+    };
+  }, []); // Only run once on mount
 
   const login = async (credentials: LoginRequest) => {
     try {
