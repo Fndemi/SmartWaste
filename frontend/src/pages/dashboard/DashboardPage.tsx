@@ -32,6 +32,7 @@ export function DashboardPage() {
   const [facilityLoading, setFacilityLoading] = useState(false);
   const [councilOverview, setCouncilOverview] = useState<{ byStatus: Array<{ _id: string; count: number }>; byType: Array<{ _id: string; count: number; totalWeightKg: number; avgContamination: number }>; totals: { total: number; totalWeightKg: number; avgContamination: number; processed: number; rejected: number } } | null>(null);
   const [councilLoading, setCouncilLoading] = useState(false);
+  const [driverPickupFilter, setDriverPickupFilter] = useState<'available' | 'assigned' | 'all'>('available');
 
   useEffect(() => {
     const fetchUserStats = async () => {
@@ -233,11 +234,35 @@ export function DashboardPage() {
           )}
         </div>
 
-        {/* Driver Available Pickups Section */}
-        {user?.role === 'DRIVER' && availablePickups.length > 0 && (
+        {/* Driver Pickup Filter Buttons */}
+        {user?.role === 'DRIVER' && (
+          <div className="flex gap-2 mb-4">
+            <button
+              className={`px-3 py-1 rounded ${driverPickupFilter === 'available' ? 'bg-blue-600 text-white' : 'bg-ink-100 dark:bg-ink-700 text-ink-900 dark:text-ink-100'}`}
+              onClick={() => setDriverPickupFilter('available')}
+            >
+              Available
+            </button>
+            <button
+              className={`px-3 py-1 rounded ${driverPickupFilter === 'assigned' ? 'bg-blue-600 text-white' : 'bg-ink-100 dark:bg-ink-700 text-ink-900 dark:text-ink-100'}`}
+              onClick={() => setDriverPickupFilter('assigned')}
+            >
+              Assigned
+            </button>
+            <button
+              className={`px-3 py-1 rounded ${driverPickupFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-ink-100 dark:bg-ink-700 text-ink-900 dark:text-ink-100'}`}
+              onClick={() => setDriverPickupFilter('all')}
+            >
+              All
+            </button>
+          </div>
+        )}
+
+        {/* Driver Pickups Table (filtered) */}
+        {user?.role === 'DRIVER' && (
           <div className="bg-white dark:bg-ink-800 rounded-lg shadow-sm border border-ink-200 dark:border-ink-700 p-6 mt-6">
             <h2 className="text-lg font-bold text-ink-900 dark:text-ink-100 mb-4 flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-brand-600" /> Available Pickups
+              <MapPin className="h-5 w-5 text-brand-600" /> Pickups
             </h2>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-ink-200 dark:divide-ink-700">
@@ -246,22 +271,46 @@ export function DashboardPage() {
                     <th className="px-3 py-2 text-left text-xs font-medium text-ink-500 dark:text-ink-400 uppercase">Waste Type</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-ink-500 dark:text-ink-400 uppercase">Weight (kg)</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-ink-500 dark:text-ink-400 uppercase">Address</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-ink-500 dark:text-ink-400 uppercase">Status</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-ink-500 dark:text-ink-400 uppercase">Requested</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-ink-500 dark:text-ink-400 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {availablePickups.map(pickup => (
-                    <tr key={pickup._id} className="hover:bg-ink-50 dark:hover:bg-ink-700/30 transition-colors">
-                      <td className="px-3 py-2 text-ink-900 dark:text-ink-100">{pickup.wasteType}</td>
-                      <td className="px-3 py-2 text-ink-900 dark:text-ink-100">{pickup.estimatedWeightKg}</td>
-                      <td className="px-3 py-2 text-ink-900 dark:text-ink-100">{pickup.address}</td>
-                      <td className="px-3 py-2 text-ink-600 dark:text-ink-400">{new Date(pickup.createdAt).toLocaleDateString()}</td>
-                      <td className="px-3 py-2 text-ink-900 dark:text-ink-100">
-                        <Link to={`/pickups/${pickup._id}`} className="px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700">View</Link>
-                      </td>
-                    </tr>
-                  ))}
+                  {(() => {
+                    let pickups: Pickup[] = [];
+                    if (driverPickupFilter === 'available') {
+                      pickups = availablePickups;
+                    } else if (driverPickupFilter === 'assigned') {
+                      pickups = userPickups;
+                    } else {
+                      // 'all': merge and dedupe by _id
+                      const all = [...availablePickups, ...userPickups];
+                      const seen = new Set();
+                      pickups = all.filter(p => {
+                        if (seen.has(p._id)) return false;
+                        seen.add(p._id);
+                        return true;
+                      });
+                    }
+                    if (pickups.length === 0) {
+                      return (
+                        <tr><td colSpan={6} className="text-center text-ink-600 dark:text-ink-400 py-4">No pickups found.</td></tr>
+                      );
+                    }
+                    return pickups.map(pickup => (
+                      <tr key={pickup._id} className="hover:bg-ink-50 dark:hover:bg-ink-700/30 transition-colors">
+                        <td className="px-3 py-2 text-ink-900 dark:text-ink-100">{pickup.wasteType}</td>
+                        <td className="px-3 py-2 text-ink-900 dark:text-ink-100">{pickup.estimatedWeightKg}</td>
+                        <td className="px-3 py-2 text-ink-900 dark:text-ink-100">{pickup.address}</td>
+                        <td className="px-3 py-2 text-ink-900 dark:text-ink-100 capitalize">{pickup.status.replace('_', ' ')}</td>
+                        <td className="px-3 py-2 text-ink-600 dark:text-ink-400">{new Date(pickup.createdAt).toLocaleDateString()}</td>
+                        <td className="px-3 py-2 text-ink-900 dark:text-ink-100">
+                          <Link to={`/pickups/${pickup._id}`} className="px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700">View</Link>
+                        </td>
+                      </tr>
+                    ));
+                  })()}
                 </tbody>
               </table>
             </div>
