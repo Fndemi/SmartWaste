@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { MinLength, IsEmail, IsString, IsIn } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 export class RegisterDto {

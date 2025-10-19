@@ -30,6 +30,24 @@ export class UsersService {
     private readonly mailService: MailService,
   ) {}
 
+  private normalizeUser<T extends any>(user: T | null): any {
+    if (!user) return user;
+    const u: any =
+      typeof (user as any).toObject === 'function'
+        ? (user as any).toObject()
+        : { ...(user as any) };
+    if (u._id) {
+      const idStr =
+        typeof u._id === 'string'
+          ? u._id
+          : (u._id.toString?.() ?? String(u._id));
+      u.id = idStr;
+      u._id = idStr;
+    }
+    if ('passwordHash' in u) delete u.passwordHash;
+    return u;
+  }
+
   async create(data: Partial<IUser>): Promise<IUser> {
     console.log('🔍 [UsersService] Creating new user with data:', {
       email: data.email,
@@ -59,11 +77,8 @@ export class UsersService {
         idString: savedUser._id.toString(),
       });
 
-      // Convert to plain object and remove sensitive data
-      const userObj = savedUser.toObject();
-      delete userObj.passwordHash;
-
-      return userObj as IUser;
+      // Normalize before returning (string id, no sensitive fields)
+      return this.normalizeUser(savedUser) as IUser;
     } catch (error) {
       console.error('❌ [UsersService] Error creating user:', {
         error: error.message,
@@ -165,7 +180,7 @@ export class UsersService {
         updatedFields: Object.keys(update),
       });
 
-      return updatedUser;
+      return this.normalizeUser(updatedUser);
     } catch (error) {
       console.error('❌ [UsersService] Error updating user:', {
         error: error.message,
@@ -218,7 +233,7 @@ export class UsersService {
         idString: user._id.toString(),
       });
 
-      return user;
+      return this.normalizeUser(user) as IUser;
     } catch (error) {
       console.error(`❌ [UsersService] Error in findById:`, {
         error: error.message,
@@ -267,6 +282,7 @@ export class UsersService {
         );
       }
 
+      // IMPORTANT: Do NOT normalize here so passwordHash remains available for AuthService
       return user as IUser | null;
     } catch (error) {
       console.error(`❌ [UsersService] Error in findByEmailWithPassword:`, {
@@ -378,7 +394,7 @@ export class UsersService {
         console.log(
           `ℹ️ [updateProfile] No changes to update for user ${userId}`,
         );
-        return user.toObject();
+        return this.normalizeUser(user);
       }
 
       // Perform the update
@@ -422,7 +438,7 @@ export class UsersService {
         }
       }
 
-      return updatedUser as IUser;
+      return this.normalizeUser(updatedUser) as IUser;
     } catch (error) {
       console.error(`❌ [updateProfile] Error updating user ${userId}:`, error);
 
@@ -623,7 +639,7 @@ export class UsersService {
         timestamp: new Date().toISOString(),
       });
 
-      return updatedUser as IUser;
+      return this.normalizeUser(updatedUser) as IUser;
     } catch (error) {
       console.error('❌ Error in verifyEmail:', error);
       if (error instanceof BadRequestException) {
@@ -727,7 +743,7 @@ export class UsersService {
 
   async validateRefreshToken(userId: string, token: string): Promise<boolean> {
     const user = await this.model.findOne({
-      _id: userId,
+      _id: new Types.ObjectId(userId),
       'tokens.token': token,
       'tokens.type': 'refresh',
       'tokens.blacklisted': false,

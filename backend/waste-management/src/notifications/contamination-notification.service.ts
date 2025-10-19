@@ -24,11 +24,21 @@ export class ContaminationNotificationService {
 
   private loadDriverEmails() {
     this.driverEmails = {
-      plastic: this.configService.get<string>('DRIVER_EMAIL_PLASTIC') || 'felixkerich@yahoo.com',
-      paper: this.configService.get<string>('DRIVER_EMAIL_PAPER') || 'felixkerich@yahoo.com',
-      glass: this.configService.get<string>('DRIVER_EMAIL_GLASS') || 'felixkerich@yahoo.com',
-      metal: this.configService.get<string>('DRIVER_EMAIL_METAL') || 'felixkerich@yahoo.com',
-      organic: this.configService.get<string>('DRIVER_EMAIL_ORGANIC') || 'felixkerich@yahoo.com',
+      plastic:
+        this.configService.get<string>('DRIVER_EMAIL_PLASTIC') ||
+        'felixkerich@yahoo.com',
+      paper:
+        this.configService.get<string>('DRIVER_EMAIL_PAPER') ||
+        'felixkerich@yahoo.com',
+      glass:
+        this.configService.get<string>('DRIVER_EMAIL_GLASS') ||
+        'felixkerich@yahoo.com',
+      metal:
+        this.configService.get<string>('DRIVER_EMAIL_METAL') ||
+        'felixkerich@yahoo.com',
+      organic:
+        this.configService.get<string>('DRIVER_EMAIL_ORGANIC') ||
+        'felixkerich@yahoo.com',
       // Add more waste types as needed
     };
   }
@@ -48,8 +58,12 @@ export class ContaminationNotificationService {
       if (imageUrl.includes('res.cloudinary.com')) {
         // Remove any existing transformations
         const baseUrl = imageUrl.split('/').slice(0, 7).join('/');
-        const publicIdWithExtension = imageUrl.split('/').slice(7).join('/').split('?')[0];
-        
+        const publicIdWithExtension = imageUrl
+          .split('/')
+          .slice(7)
+          .join('/')
+          .split('?')[0];
+
         // Add Cloudinary transformations for better email display
         return `${baseUrl}/c_limit,w_800,h_600,f_auto,q_auto/${publicIdWithExtension}`;
       }
@@ -60,17 +74,22 @@ export class ContaminationNotificationService {
     }
   }
 
-  async sendContaminationAlert(notificationData: ContaminationNotificationData): Promise<void> {
-    const { wasteType, location, score, label, detectedAt, imageUrl } = notificationData;
-    
+  async sendContaminationAlert(
+    notificationData: ContaminationNotificationData,
+  ): Promise<void> {
+    const { wasteType, location, score, label, detectedAt, imageUrl } =
+      notificationData;
+
     try {
       const driverEmail = this.getDriverEmail(wasteType);
       const formattedDate = detectedAt.toLocaleString();
-      
+
       // Get the dashboard URL from config or use a default
-      const dashboardBaseUrl = this.configService.get<string>('DASHBOARD_URL') || 'http://localhost:3000';
+      const dashboardBaseUrl =
+        this.configService.get<string>('DASHBOARD_URL') ||
+        'http://localhost:3000';
       const dashboardUrl = `${dashboardBaseUrl}/dashboard`; // Adjust the path as needed
-      
+
       const emailContext: Record<string, any> = {
         wasteType,
         location,
@@ -85,7 +104,7 @@ export class ContaminationNotificationService {
       if (imageUrl) {
         emailContext.imageUrl = this.optimizeCloudinaryUrl(imageUrl);
       }
-      
+
       await this.mailService.sendEmail({
         to: driverEmail,
         subject: `Contamination Alert - ${wasteType.toUpperCase()} Waste`,
@@ -94,7 +113,9 @@ export class ContaminationNotificationService {
       });
     } catch (error) {
       console.error('Failed to send contamination alert:', error);
-      throw new Error(`Failed to send contamination notification: ${error.message}`);
+      throw new Error(
+        `Failed to send contamination notification: ${error.message}`,
+      );
     }
   }
 }

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 export enum WasteType {
@@ -124,3 +124,27 @@ export class Pickup {
 export const PickupSchema = SchemaFactory.createForClass(Pickup);
 PickupSchema.index({ geom: '2dsphere' });
 PickupSchema.index({ status: 1, assignedTo: 1, createdAt: -1 });
+
+// Normalize JSON output: string ids, alias URLs to frontend naming
+(PickupSchema as any).set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_doc: any, ret: any) => {
+    if (ret._id) ret._id = ret._id.toString();
+    if (ret.requestedBy) ret.requestedBy = ret.requestedBy.toString();
+    if (ret.assignedTo) ret.assignedTo = ret.assignedTo.toString();
+    if (ret.facilityId) ret.facilityId = ret.facilityId.toString();
+
+    // Aliases to match frontend types
+    if (ret.imageSecureUrl && !ret.imageUrl) ret.imageUrl = ret.imageSecureUrl;
+    if (ret.completionProofUrl && !ret.completionPhotoUrl)
+      ret.completionPhotoUrl = ret.completionProofUrl;
+
+    return ret;
+  },
+});
+
+(PickupSchema as any).set('toObject', {
+  virtuals: true,
+  versionKey: false,
+});

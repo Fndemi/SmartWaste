@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/require-await */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
@@ -32,6 +30,7 @@ export class ContaminationClient {
   private readonly geminiKey?: string;
   private readonly geminiModelId: string;
   private readonly alertThreshold: number; // 1..10 scale
+  private readonly provider: 'external' | 'gemini';
 
   private genAI?: GoogleGenerativeAI;
   private geminiModel?: ReturnType<GoogleGenerativeAI['getGenerativeModel']>;
@@ -42,15 +41,15 @@ export class ContaminationClient {
     private readonly notificationService: ContaminationNotificationService,
   ) {
     const baseURL = this.config.get<string>('CONTAMINATION_API_URL') || '';
-    const bearer = baseURL ? `Bearer ${baseURL}` : undefined; // your original code used URL as token; kept as-is
+    const apiToken = this.config.get<string>('CONTAMINATION_API_TOKEN');
 
     this.http = axios.create({
       baseURL,
       timeout: 10000,
-      headers: baseURL ? { Authorization: bearer! } : {},
+      headers: apiToken ? { Authorization: `Bearer ${apiToken}` } : {},
     });
 
-    // Gemini setup (used when CONTAMINATION_API_URL is not set)
+    // Gemini setup
     this.geminiKey = this.config.get<string>('GEMINI_API_KEY');
     this.geminiModelId =
       this.config.get<string>('GEMINI_MODEL_ID') || 'gemini-2.5-flash';
@@ -58,7 +57,14 @@ export class ContaminationClient {
       this.config.get<string>('CONTAMINATION_ALERT_THRESHOLD') ?? 6,
     );
 
-    if (!baseURL && this.geminiKey) {
+    // Provider selection: explicit wins; otherwise prefer gemini if key exists
+    const explicitProvider = this.config.get<string>('CONTAMINATION_PROVIDER');
+    this.provider = (explicitProvider as any) === 'external' ? 'external' : 'gemini';
+    if (!explicitProvider) {
+      this.provider = this.geminiKey ? 'gemini' : baseURL ? 'external' : 'gemini';
+    }
+
+    if (this.provider === 'gemini' && this.geminiKey) {
       this.genAI = new GoogleGenerativeAI(this.geminiKey);
       this.geminiModel = this.genAI.getGenerativeModel({
         model: this.geminiModelId,
@@ -196,7 +202,7 @@ export class ContaminationClient {
   ): Promise<GeminiOut> {
     if (!this.geminiModel) {
       throw new InternalServerErrorException(
-        'Gemini not configured. Set GEMINI_API_KEY or CONTAMINATION_API_URL.',
+        'Gemini not configured. Set GEMINI_API_KEY or CONTAMINATION_PROVIDER=external.',
       );
     }
 
@@ -234,7 +240,7 @@ Return ONLY JSON matching the schema.`;
   // ---------- Helpers ----------
 
   private usingExternalApi(): boolean {
-    return Boolean(this.config.get<string>('CONTAMINATION_API_URL'));
+    return this.provider === 'external';
   }
 
   private clampInt(n: number, min: number, max: number): number {

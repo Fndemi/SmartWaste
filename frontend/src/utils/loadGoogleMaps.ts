@@ -11,6 +11,8 @@ export function loadGoogleMaps(): Promise<typeof google> {
 
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
   if (!apiKey) {
+    // eslint-disable-next-line no-console
+    console.error('VITE_GOOGLE_MAPS_KEY is not set. Create frontend/.env.local and add VITE_GOOGLE_MAPS_KEY=YOUR_KEY, then restart dev server.');
     return Promise.reject(new Error('VITE_GOOGLE_MAPS_KEY is not set'));
   }
 
@@ -25,7 +27,8 @@ export function loadGoogleMaps(): Promise<typeof google> {
     script.id = 'google-maps-script';
     script.async = true;
     script.defer = true;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    // Use recommended async loading params
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&v=weekly&loading=async`;
     script.onload = () => resolve((window as any).google);
     script.onerror = () => reject(new Error('Failed to load Google Maps script'));
     document.head.appendChild(script);

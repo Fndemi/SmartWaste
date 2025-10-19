@@ -14,6 +14,7 @@ export interface JwtPayload {
 }
 
 export interface ValidatedUser {
+  sub: string; // keep standard claim for decorators/controllers
   _id: string;
   userId: string;
   email?: string;
@@ -47,6 +48,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // Return user info directly from JWT payload
     // This becomes req.user - no database call needed!
     return {
+      sub: payload.sub,
       _id: payload.sub,
       userId: payload.sub,
       email: payload.email,

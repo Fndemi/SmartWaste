@@ -49,14 +49,20 @@ export function CreatePickupPage() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+      toast.error('Unsupported image type. Use PNG, JPG, GIF, or WEBP.');
+      return;
     }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image too large. Max 5MB.');
+      return;
+    }
+    setSelectedImage(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setImagePreview(e.target?.result as string);
+    reader.readAsDataURL(file);
   };
 
   const getCurrentLocation = () => {
@@ -87,25 +93,35 @@ export function CreatePickupPage() {
     try {
       // Extract only the fields we need for the API call
       const { wasteType, estimatedWeightKg, description, address, lat, lng } = data;
-      const payload = {
+      const payload: any = {
         wasteType,
         estimatedWeightKg,
         description,
         address,
-        lat: lat ?? 0,
-        lng: lng ?? 0,
       };
+      if (typeof lat === 'number' && isFinite(lat) && typeof lng === 'number' && isFinite(lng)) {
+        payload.lat = lat;
+        payload.lng = lng;
+      }
+      // eslint-disable-next-line no-console
+      console.log('[ui] createPickup submit', { payload, image: { name: selectedImage.name, size: selectedImage.size, type: selectedImage.type } });
       await apiService.createPickup(payload, selectedImage);
       toast.success('Pickup request created successfully!');
       navigate('/dashboard');
     } catch (error: unknown) {
-      const errorMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to create pickup request';
+      const err = error as any;
+      // eslint-disable-next-line no-console
+      console.error('[ui] createPickup failed', {
+        message: err?.message,
+        status: err?.response?.status,
+        response: err?.response?.data,
+      });
+      const errorMessage = err?.response?.data?.message || 'Failed to create pickup request';
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
-
   return (
     <DashboardLayout>
       <div className="max-w-2xl mx-auto">
@@ -139,7 +155,7 @@ export function CreatePickupPage() {
                   <input
                     type="file"
                     className="hidden"
-                    accept="image/*"
+                    accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
                     onChange={handleImageChange}
                   />
                 </label>
@@ -176,7 +192,7 @@ export function CreatePickupPage() {
                     }`}
                 >
                   <input
-                    {...register('wasteType')}
+                    {...register('wasteType', { required: 'Please select a waste type' })}
                     type="radio"
                     value={type.value}
                     className="sr-only"
@@ -204,7 +220,7 @@ export function CreatePickupPage() {
 
             <div className="space-y-4">
               <Input
-                {...register('estimatedWeightKg', { valueAsNumber: true })}
+                {...register('estimatedWeightKg', { valueAsNumber: true, required: 'Estimated weight is required', min: { value: 0.1, message: 'Weight must be > 0' } })}
                 type="number"
                 step="0.1"
                 min="0.1"

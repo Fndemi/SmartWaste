@@ -329,7 +329,7 @@ export class AuthService {
 
       const payload = this.jwt.verify(refreshTokenDto.refreshToken, {
         secret: this.config.get('JWT_SECRET'),
-      }) as { sub: string; type: string };
+      });
 
       if (payload.type !== 'refresh') {
         throw new UnauthorizedException('Invalid token type');

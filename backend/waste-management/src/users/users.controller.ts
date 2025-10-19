@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Controller,
@@ -54,18 +52,16 @@ export class UsersController {
     status: 200,
     description: "Returns the authenticated user's profile",
   })
-  getProfile(@CurrentUser() user: CurrentUserType | null) {
+  async getProfile(@CurrentUser() user: CurrentUserType | null) {
     if (!user?.sub) {
       throw new UnauthorizedException(
         'You must be logged in to access this resource',
       );
     }
 
-    // ✅ Return decoded user directly from JWT
-    return {
-      message: 'Profile fetched successfully',
-      user,
-    };
+    // Fetch the latest user profile from DB to match frontend expectations
+    const profile = await this.usersService.findById(user.sub);
+    return profile;
   }
 
   /**
@@ -114,7 +110,9 @@ export class UsersController {
     @Body() updateProfileDto: UpdateProfileDto,
   ) {
     if (!user?.sub) {
-      throw new UnauthorizedException('You must be logged in to update profile');
+      throw new UnauthorizedException(
+        'You must be logged in to update profile',
+      );
     }
 
     try {

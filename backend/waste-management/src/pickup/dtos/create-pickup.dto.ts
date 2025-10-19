@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 // src/pickups/dtos/create-pickup.dto.ts
-import { IsEnum, IsNumber, Min, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNumber, Min, Max, IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { WasteType } from '../schema/pickup.schema';
 import { Type, Transform } from 'class-transformer';
@@ -40,11 +40,15 @@ export class CreatePickupDto {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
+  @Min(-90)
+  @Max(90)
   lat?: number;
 
   @ApiProperty({ required: false, example: 36.9624 })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
+  @Min(-180)
+  @Max(180)
   lng?: number;
 }

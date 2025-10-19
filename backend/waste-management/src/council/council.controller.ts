@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/require-await */
+
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { Controller, Get, Query } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -15,7 +15,7 @@ export class CouncilController {
 
   @Get('stats/overview')
   async overview(@Query('from') from?: string, @Query('to') to?: string) {
-    const match: Record<string, unknown> = {};
+    const match: Record<string, any> = {};
     if (from || to) match.createdAt = {};
     if (from) match.createdAt.$gte = new Date(from);
     if (to) match.createdAt.$lte = new Date(to);

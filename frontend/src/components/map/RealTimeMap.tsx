@@ -102,15 +102,27 @@ export function RealTimeMap({
     };
   }, [showDriverTracking, onLocationUpdate]);
 
-  // Initialize map
+  // Initialize map when container is visible and has size
   useEffect(() => {
-    const initializeMap = async () => {
+    let cleanupResize: (() => void) | null = null;
+    let resizeObserver: ResizeObserver | null = null;
+    let initialized = false;
+
+    const canInit = () => {
+      const el = mapRef.current;
+      if (!el) return false;
+      const rect = el.getBoundingClientRect();
+      const hasSize = rect.width > 0 && rect.height > 0;
+      const visible = !!el.offsetParent || rect.height > 0;
+      return hasSize && visible && !mapInstanceRef.current && !initialized;
+    };
+
+    const doInit = async () => {
       try {
         setIsLoading(true);
         setError(null);
 
         const google = await loadGoogleMaps();
-
         if (!mapRef.current) return;
 
         const center = pickupLocation || { lat: -1.2921, lng: 36.8219 }; // Default to Nairobi
@@ -125,21 +137,23 @@ export function RealTimeMap({
         });
 
         mapInstanceRef.current = map;
+        initialized = true;
 
-        // Add pickup location marker
+        // Trigger resize after first paint to avoid blank tiles
+        requestAnimationFrame(() => {
+          google.maps.event.trigger(map, 'resize');
+          map.setCenter(center);
+        });
+
+        // Add markers as before
         if (pickupLocation) {
           const pickupMarker = new google.maps.Marker({
             position: pickupLocation,
             map,
             title: 'Pickup Location',
-            icon: {
-              url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-              scaledSize: new google.maps.Size(32, 32),
-            },
+            icon: { url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png', scaledSize: new google.maps.Size(32, 32) },
           });
           markersRef.current.pickup = pickupMarker;
-
-          // Add info window for pickup
           const pickupInfoWindow = new google.maps.InfoWindow({
             content: `
               <div style="padding: 8px;">
@@ -148,26 +162,17 @@ export function RealTimeMap({
               </div>
             `,
           });
-
-          pickupMarker.addListener('click', () => {
-            pickupInfoWindow.open(map, pickupMarker);
-          });
+          pickupMarker.addListener('click', () => pickupInfoWindow.open(map, pickupMarker));
         }
 
-        // Add driver location marker
         if (driverLocation) {
           const driverMarker = new google.maps.Marker({
             position: driverLocation,
             map,
             title: 'Driver Location',
-            icon: {
-              url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-              scaledSize: new google.maps.Size(32, 32),
-            },
+            icon: { url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png', scaledSize: new google.maps.Size(32, 32) },
           });
           markersRef.current.driver = driverMarker;
-
-          // Add info window for driver
           const driverInfoWindow = new google.maps.InfoWindow({
             content: `
               <div style="padding: 8px;">
@@ -176,26 +181,17 @@ export function RealTimeMap({
               </div>
             `,
           });
-
-          driverMarker.addListener('click', () => {
-            driverInfoWindow.open(map, driverMarker);
-          });
+          driverMarker.addListener('click', () => driverInfoWindow.open(map, driverMarker));
         }
 
-        // Add household location marker
         if (householdLocation) {
           const householdMarker = new google.maps.Marker({
             position: householdLocation,
             map,
             title: 'Household Location',
-            icon: {
-              url: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
-              scaledSize: new google.maps.Size(32, 32),
-            },
+            icon: { url: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png', scaledSize: new google.maps.Size(32, 32) },
           });
           markersRef.current.household = householdMarker;
-
-          // Add info window for household
           const householdInfoWindow = new google.maps.InfoWindow({
             content: `
               <div style="padding: 8px;">
@@ -204,25 +200,16 @@ export function RealTimeMap({
               </div>
             `,
           });
-
-          householdMarker.addListener('click', () => {
-            householdInfoWindow.open(map, householdMarker);
-          });
+          householdMarker.addListener('click', () => householdInfoWindow.open(map, householdMarker));
         }
 
-        // Add current user location marker (for drivers)
         if (userLocation && showDriverTracking) {
           const userMarker = new google.maps.Marker({
             position: userLocation,
             map,
             title: 'Your Location',
-            icon: {
-              url: 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
-              scaledSize: new google.maps.Size(32, 32),
-            },
+            icon: { url: 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png', scaledSize: new google.maps.Size(32, 32) },
           });
-
-          // Add info window for user location
           const userInfoWindow = new google.maps.InfoWindow({
             content: `
               <div style="padding: 8px;">
@@ -231,23 +218,34 @@ export function RealTimeMap({
               </div>
             `,
           });
-
-          userMarker.addListener('click', () => {
-            userInfoWindow.open(map, userMarker);
-          });
+          userMarker.addListener('click', () => userInfoWindow.open(map, userMarker));
         }
 
-        // Fit bounds to show all markers
         const bounds = new google.maps.LatLngBounds();
         if (pickupLocation) bounds.extend(pickupLocation);
         if (driverLocation) bounds.extend(driverLocation);
         if (householdLocation) bounds.extend(householdLocation);
         if (userLocation) bounds.extend(userLocation);
+        if (!bounds.isEmpty()) map.fitBounds(bounds);
 
-        if (!bounds.isEmpty()) {
-          map.fitBounds(bounds);
+        // Observe size changes and trigger resize
+        if (mapRef.current && 'ResizeObserver' in window) {
+          resizeObserver = new ResizeObserver(() => {
+            if (mapInstanceRef.current) {
+              google.maps.event.trigger(mapInstanceRef.current, 'resize');
+            }
+          });
+          resizeObserver.observe(mapRef.current);
         }
 
+        // Window resize as fallback
+        const onWinResize = () => {
+          if (mapInstanceRef.current) {
+            google.maps.event.trigger(mapInstanceRef.current, 'resize');
+          }
+        };
+        window.addEventListener('resize', onWinResize);
+        cleanupResize = () => window.removeEventListener('resize', onWinResize);
       } catch (err) {
         console.error('Error initializing map:', err);
         setError('Failed to load map');
@@ -256,7 +254,24 @@ export function RealTimeMap({
       }
     };
 
-    initializeMap();
+    // If container has size now, init; else wait for it
+    if (canInit()) {
+      void doInit();
+    } else if (mapRef.current && 'ResizeObserver' in window) {
+      resizeObserver = new ResizeObserver(() => {
+        if (canInit()) void doInit();
+      });
+      resizeObserver.observe(mapRef.current);
+    } else {
+      // Fallback: try once after a tick
+      const id = setTimeout(() => { if (canInit()) void doInit(); }, 0);
+      cleanupResize = () => clearTimeout(id);
+    }
+
+    return () => {
+      if (cleanupResize) cleanupResize();
+      if (resizeObserver && mapRef.current) resizeObserver.unobserve(mapRef.current);
+    };
   }, [pickupLocation, driverLocation, householdLocation, userLocation, showDriverTracking]);
 
   // Update driver marker position

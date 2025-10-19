@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Module } from '@nestjs/common';
 import { PickupController } from './pickup.controller';
 import { PickupService } from './pickup.service';

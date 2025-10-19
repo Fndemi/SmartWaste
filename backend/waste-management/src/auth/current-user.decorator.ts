@@ -1,8 +1,8 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 export interface CurrentUserType {
-  sub: string;        // Standard JWT subject claim (user ID)
-  userId: string;     // Alias for sub
+  sub: string; // Standard JWT subject claim (user ID)
+  userId: string; // Alias for sub
   role: string;
   email?: string;
   name?: string;
@@ -21,7 +21,7 @@ export const CurrentUser = createParamDecorator(
     const user = request.user ?? {};
 
     return {
-      sub: user.sub ?? '',
+      sub: user.sub ?? user.userId ?? '',
       userId: user.sub ?? user.userId ?? '',
       role: user.role ?? 'guest',
       email: user.email,

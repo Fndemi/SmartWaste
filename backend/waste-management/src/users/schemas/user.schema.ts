@@ -77,3 +77,40 @@ export class User implements IUser {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+// Ensure stable JSON: expose id as string and remove sensitive/internal fields
+UserSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_doc, ret: any) => {
+    if (ret._id) {
+      ret.id = ret._id.toString();
+      ret._id = ret._id.toString();
+    }
+    delete ret.passwordHash;
+    delete ret.tokens;
+    delete ret.emailVerificationToken;
+    delete ret.emailVerificationExpires;
+    delete ret.resetPasswordToken;
+    delete ret.resetPasswordExpires;
+    return ret;
+  },
+});
+
+UserSchema.set('toObject', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_doc, ret: any) => {
+    if (ret._id) {
+      ret.id = ret._id.toString();
+      ret._id = ret._id.toString();
+    }
+    delete ret.passwordHash;
+    delete ret.tokens;
+    delete ret.emailVerificationToken;
+    delete ret.emailVerificationExpires;
+    delete ret.resetPasswordToken;
+    delete ret.resetPasswordExpires;
+    return ret;
+  },
+});

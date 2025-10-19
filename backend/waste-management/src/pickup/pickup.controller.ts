@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
@@ -23,6 +22,7 @@ import {
   CanActivate,
   ExecutionContext,
   SetMetadata,
+  Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -71,6 +71,7 @@ class RolesGuard implements CanActivate {
 @UseGuards(AuthGuard('jwt'), RolesGuard) // JWT + RBAC
 @Controller('pickups')
 export class PickupController {
+  private readonly logger = new Logger(PickupController.name);
   constructor(private readonly pickupsService: PickupService) {}
 
   @Post()
@@ -108,7 +109,7 @@ export class PickupController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 5 * 1000 * 1000 }),
-          new FileTypeValidator({ fileType: '.(png|jpeg|jpg|gif)' }),
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg|gif|webp)' }),
         ],
       }),
     )
@@ -117,16 +118,30 @@ export class PickupController {
     @Req() req: any,
   ) {
     const requestedById = req?.user?.sub || req?.user?._id || req?.user?.id;
-    const pickup = await this.pickupsService.createPickup(
-      dto,
-      image,
-      requestedById,
+    this.logger.log(
+      `[POST /pickups] user=${requestedById} file={type:${image?.mimetype},size:${image?.size}} body=${JSON.stringify(dto)}`,
     );
-    return {
-      status: 'success',
-      message: 'Pickup created',
-      data: pickup,
-    };
+    try {
+      const pickup = await this.pickupsService.createPickup(
+        dto,
+        image,
+        requestedById,
+      );
+      this.logger.log(
+        `[POST /pickups] created id=${(pickup as any)?._id} for user=${requestedById}`,
+      );
+      return {
+        status: 'success',
+        message: 'Pickup created',
+        data: pickup,
+      };
+    } catch (e: any) {
+      this.logger.error(
+        `[POST /pickups] failed user=${requestedById}: ${e?.message}`,
+        e?.stack,
+      );
+      throw e;
+    }
   }
 
   // Available queue (open to all logged-in users)
@@ -164,7 +179,10 @@ export class PickupController {
   // DRIVER claims
   @Patch(':id/claim')
   @Roles('DRIVER')
-  async claim(@Param('id') id: string, @Req() req: { user?: { sub?: string; _id?: string; id?: string } }) {
+  async claim(
+    @Param('id') id: string,
+    @Req() req: { user?: { sub?: string; _id?: string; id?: string } },
+  ) {
     const driverId = req?.user?.sub || req?.user?._id || req?.user?.id;
     if (!driverId) throw new BadRequestException('driverId is required');
     const data = await this.pickupsService.claim(id, driverId);
@@ -189,7 +207,11 @@ export class PickupController {
     @Body() dto: MarkPickedUpDto,
   ) {
     const driverId = req?.user?.sub || req?.user?._id || req?.user?.id;
-    const data = await this.pickupsService.markPickedUp(id, driverId, dto);
+    const data = await this.pickupsService.markPickedUp(
+      id,
+      driverId ?? '',
+      dto,
+    );
     return { status: 'success', message: 'Marked picked up', data };
   }
 
@@ -220,7 +242,7 @@ export class PickupController {
     const driverId = req?.user?.sub || req?.user?._id || req?.user?.id;
     const data = await this.pickupsService.markCompleted(
       id,
-      driverId,
+      driverId ?? '',
       dto,
       photo,
     );
@@ -247,7 +269,7 @@ export class PickupController {
     const recyclerUserId = req?.user?.sub || req?.user?._id || req?.user?.id;
     const data = await this.pickupsService.recyclerReceive(
       id,
-      recyclerUserId,
+      recyclerUserId ?? '',
       dto,
     );
     return { status: 'success', message: 'Received', data };

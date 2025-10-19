@@ -1,9 +1,8 @@
-import { 
+import {
   ExecutionContext,
-  Injectable, 
+  Injectable,
   UnauthorizedException,
   Logger,
- 
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Observable } from 'rxjs';
@@ -12,14 +11,14 @@ import { IS_PUBLIC_KEY } from './decorators/public.decorator';
 
 /**
  * JWT Authentication Guard
- * 
+ *
  * This guard extends the default Passport JWT strategy and adds additional
  * error handling and logging capabilities.
  */
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
   private readonly logger = new Logger(JwtAuthGuard.name);
-  
+
   constructor(private reflector: Reflector) {
     super();
   }
@@ -57,7 +56,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     if (err || !user) {
       const message = info?.message || 'Invalid or expired token';
       this.logger.warn(`Authentication failed: ${message}`);
-      
+
       // Provide more specific error messages when possible
       if (info?.name === 'TokenExpiredError') {
         throw new UnauthorizedException('Token has expired');
@@ -66,13 +65,13 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       } else if (info?.name === 'NotBeforeError') {
         throw new UnauthorizedException('Token not yet valid');
       }
-      
+
       throw new UnauthorizedException(message);
     }
 
     // Attach additional user information to the request if needed
     request.user = user;
-    
+
     return user;
   }
 }

@@ -49,15 +49,34 @@ export class PickupService {
     image: Express.Multer.File,
     requestedBy: string,
   ) {
+    this.logger.log(
+      `[createPickup] requestedBy=${requestedBy} dto=${JSON.stringify(dto)} file={type:${image?.mimetype},size:${image?.size}}`,
+    );
     if (!requestedBy) throw new BadRequestException('User not found');
     if (!image) throw new BadRequestException('Image file is required');
 
-    const uploaded = await this.uploadsService.uploadSingleImage(image);
+    let uploaded: { publicId: string; secureUrl: string };
+    try {
+      uploaded = await this.uploadsService.uploadSingleImage(image);
+      this.logger.debug(
+        `[createPickup] image uploaded publicId=${uploaded.publicId}`,
+      );
+    } catch (err: any) {
+      this.logger.error(
+        `[createPickup] image upload failed: ${err?.message}`,
+        err?.stack,
+      );
+      throw new BadRequestException('Image upload failed');
+    }
+
+    const hasCoords =
+      typeof dto.lat === 'number' && Number.isFinite(dto.lat) &&
+      typeof dto.lng === 'number' && Number.isFinite(dto.lng);
 
     const location =
       dto.address ||
-      (dto.lat && dto.lng
-        ? `Coordinates: ${dto.lat.toFixed(4)}, ${dto.lng.toFixed(4)}`
+      (hasCoords
+        ? `Coordinates: ${dto.lat!.toFixed(4)}, ${dto.lng!.toFixed(4)}`
         : 'Location not specified');
 
     let scoreRes: { score: number; label: string };
@@ -69,20 +88,28 @@ export class PickupService {
       );
       if (Number.isNaN(scoreRes.score))
         throw new Error('Invalid score from model');
-    } catch (e) {
-      this.logger.warn(`URL scoring failed, trying buffer: ${e.message}`);
+      this.logger.debug(
+        `[createPickup] URL scoring ok score=${scoreRes.score} label=${scoreRes.label}`,
+      );
+    } catch (e: any) {
+      this.logger.warn(
+        `[createPickup] URL scoring failed (${e?.message}), trying buffer`,
+      );
       scoreRes = await this.contaminationClient.scoreByBuffer(
         image.buffer,
         image.originalname,
         dto.wasteType,
         location,
       );
+      this.logger.debug(
+        `[createPickup] Buffer scoring ok score=${scoreRes.score} label=${scoreRes.label}`,
+      );
     }
 
     const doc = new this.pickupModel({
       wasteType: dto.wasteType,
       estimatedWeightKg: dto.estimatedWeightKg,
-      description: dto.description ?? null,
+      description: dto.description,
       imagePublicId: uploaded.publicId,
       imageSecureUrl: uploaded.secureUrl,
       contaminationScore: Math.max(0, Math.min(1, scoreRes.score)),
@@ -92,12 +119,19 @@ export class PickupService {
       requestedBy: new Types.ObjectId(requestedBy),
       address: dto.address,
       geom:
-        dto.lat != null && dto.lng != null
-          ? { type: 'Point', coordinates: [dto.lat, dto.lat] }
+        hasCoords
+          ? { type: 'Point', coordinates: [dto.lng as number, dto.lat as number] }
           : undefined,
     });
 
+    this.logger.debug(
+      `[createPickup] saving doc geom=${JSON.stringify(doc.geom)} address=${doc.address}`,
+    );
+
     await doc.save();
+    this.logger.log(
+      `[createPickup] saved id=${String(doc._id)} requestedBy=${requestedBy}`,
+    );
 
     // ✅ EMIT EVENT: Pickup created
     this.eventEmitter.emit('pickup.created', {
