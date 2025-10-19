@@ -49,10 +49,13 @@ export class PickupService {
     image: Express.Multer.File,
     requestedBy: string,
   ) {
+    console.log('🔍 Service received data:', { dto, image: !!image, requestedBy });
     if (!requestedBy) throw new BadRequestException('User not found');
     if (!image) throw new BadRequestException('Image file is required');
 
+    console.log('📤 Starting image upload...');
     const uploaded = await this.uploadsService.uploadSingleImage(image);
+    console.log('✅ Image uploaded successfully:', uploaded);
 
     const location =
       dto.address ||
@@ -60,16 +63,20 @@ export class PickupService {
         ? `Coordinates: ${dto.lat.toFixed(4)}, ${dto.lng.toFixed(4)}`
         : 'Location not specified');
 
+    console.log('🤖 Starting contamination scoring...');
     let scoreRes: { score: number; label: string };
     try {
+      console.log('📊 Attempting URL-based scoring...');
       scoreRes = await this.contaminationClient.scoreImageByUrl(
         uploaded.secureUrl,
         dto.wasteType,
         location,
       );
+      console.log('✅ URL scoring successful:', scoreRes);
       if (Number.isNaN(scoreRes.score))
         throw new Error('Invalid score from model');
     } catch (e) {
+      console.log('⚠️ URL scoring failed, trying buffer method:', e.message);
       this.logger.warn(`URL scoring failed, trying buffer: ${e.message}`);
       scoreRes = await this.contaminationClient.scoreByBuffer(
         image.buffer,
@@ -77,6 +84,7 @@ export class PickupService {
         dto.wasteType,
         location,
       );
+      console.log('✅ Buffer scoring successful:', scoreRes);
     }
 
     const doc = new this.pickupModel({
@@ -93,11 +101,13 @@ export class PickupService {
       address: dto.address,
       geom:
         dto.lat != null && dto.lng != null
-          ? { type: 'Point', coordinates: [dto.lat, dto.lat] }
+          ? { type: 'Point', coordinates: [dto.lng, dto.lat] }
           : undefined,
     });
 
+    console.log('💾 Saving pickup to database...');
     await doc.save();
+    console.log('✅ Pickup saved successfully with ID:', doc._id);
 
     // ✅ EMIT EVENT: Pickup created
     this.eventEmitter.emit('pickup.created', {
