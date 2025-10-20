@@ -112,7 +112,23 @@ export class PickupService {
       description: dto.description,
       imagePublicId: uploaded.publicId,
       imageSecureUrl: uploaded.secureUrl,
-      contaminationScore: Math.max(0, Math.min(1, scoreRes.score)),
+      contaminationScore: (() => {
+        // Handle different score formats: 0-1, 1-10, 0-100
+        let normalizedScore = scoreRes.score;
+        if (scoreRes.score > 10) {
+          // Assume percentage (0-100) -> convert to 0-1
+          normalizedScore = scoreRes.score / 100;
+        } else if (scoreRes.score > 1) {
+          // Assume 1-10 scale -> convert to 0-1
+          normalizedScore = (scoreRes.score - 1) / 9;
+        }
+        // If already 0-1, use as is
+        const finalScore = Math.max(0, Math.min(1, normalizedScore));
+        this.logger.debug(
+          `[createPickup] Score conversion: ${scoreRes.score} -> ${finalScore}`,
+        );
+        return finalScore;
+      })(),
       contaminationLabel: scoreRes.label,
       evaluatedAt: new Date(),
       status: 'pending',
