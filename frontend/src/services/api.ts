@@ -31,7 +31,7 @@ class ApiService {
 
   constructor() {
     this.api = axios.create({
-      baseURL: "http://localhost:3500", // Your backend URL
+      baseURL: import.meta.env.VITE_APP_API_URL || "http://localhost:3500", // Your backend URL
       timeout: 10000,
       headers: {
         "Content-Type": "application/json",
@@ -86,7 +86,7 @@ class ApiService {
               try {
                 // Use a plain axios client to avoid interceptor recursion
                 const plain = axios.create({
-                  baseURL: "http://localhost:3500",
+                  baseURL: import.meta.env.VITE_APP_API_URL || "http://localhost:3500",
                   timeout: 15000,
                   headers: { "Content-Type": "application/json" },
                 });
