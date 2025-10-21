@@ -38,7 +38,10 @@ export class AdminController {
   // ==================== DASHBOARD STATS ====================
   @Get('dashboard/stats')
   @ApiOperation({ summary: 'Get admin dashboard statistics' })
-  @ApiResponse({ status: 200, description: 'Dashboard statistics retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Dashboard statistics retrieved successfully',
+  })
   async getDashboardStats() {
     const stats = await this.adminService.getDashboardStats();
     return { status: 'success', data: stats };
@@ -46,7 +49,10 @@ export class AdminController {
 
   @Get('dashboard/system-health')
   @ApiOperation({ summary: 'Get system health metrics' })
-  @ApiResponse({ status: 200, description: 'System health metrics retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'System health metrics retrieved successfully',
+  })
   async getSystemHealth() {
     const health = await this.adminService.getSystemHealth();
     return { status: 'success', data: health };
@@ -57,8 +63,16 @@ export class AdminController {
   @ApiOperation({ summary: 'Get all users with pagination and filters' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 20 })
-  @ApiQuery({ name: 'role', required: false, enum: ['HOUSEHOLD', 'SME', 'DRIVER', 'RECYCLER', 'COUNCIL', 'ADMIN'] })
-  @ApiQuery({ name: 'search', required: false, description: 'Search by name or email' })
+  @ApiQuery({
+    name: 'role',
+    required: false,
+    enum: ['HOUSEHOLD', 'SME', 'DRIVER', 'RECYCLER', 'COUNCIL', 'ADMIN'],
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search by name or email',
+  })
   @ApiQuery({ name: 'isEmailVerified', required: false, type: Boolean })
   @ApiResponse({ status: 200, description: 'Users retrieved successfully' })
   async getAllUsers(
@@ -73,7 +87,12 @@ export class AdminController {
       limit: parseInt(limit),
       role,
       search,
-      isEmailVerified: isEmailVerified === 'true' ? true : isEmailVerified === 'false' ? false : undefined,
+      isEmailVerified:
+        isEmailVerified === 'true'
+          ? true
+          : isEmailVerified === 'false'
+            ? false
+            : undefined,
     };
     const users = await this.adminService.getAllUsers(filters);
     return { status: 'success', data: users };
@@ -98,7 +117,11 @@ export class AdminController {
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   async createUser(@Body() createUserDto: CreateUserDto) {
     const user = await this.adminService.createUser(createUserDto);
-    return { status: 'success', message: 'User created successfully', data: user };
+    return {
+      status: 'success',
+      message: 'User created successfully',
+      data: user,
+    };
   }
 
   @Put('users/:id')
@@ -111,7 +134,11 @@ export class AdminController {
     @Body() updateUserDto: UpdateUserDto,
   ) {
     const user = await this.adminService.updateUser(id, updateUserDto);
-    return { status: 'success', message: 'User updated successfully', data: user };
+    return {
+      status: 'success',
+      message: 'User updated successfully',
+      data: user,
+    };
   }
 
   @Delete('users/:id')
@@ -141,19 +168,38 @@ export class AdminController {
     @Param('id', ParseObjectIdPipe) id: string,
     @Body('role') role: string,
   ) {
-    if (!['HOUSEHOLD', 'SME', 'DRIVER', 'RECYCLER', 'COUNCIL', 'ADMIN'].includes(role)) {
+    if (
+      !['HOUSEHOLD', 'SME', 'DRIVER', 'RECYCLER', 'COUNCIL', 'ADMIN'].includes(
+        role,
+      )
+    ) {
       throw new BadRequestException('Invalid role');
     }
     const user = await this.adminService.changeUserRole(id, role);
-    return { status: 'success', message: 'Role changed successfully', data: user };
+    return {
+      status: 'success',
+      message: 'Role changed successfully',
+      data: user,
+    };
   }
 
   // ==================== PICKUP MANAGEMENT ====================
   @Get('pickups/overview')
   @ApiOperation({ summary: 'Get pickups overview and analytics' })
-  @ApiQuery({ name: 'startDate', required: false, description: 'Start date (ISO string)' })
-  @ApiQuery({ name: 'endDate', required: false, description: 'End date (ISO string)' })
-  @ApiResponse({ status: 200, description: 'Pickups overview retrieved successfully' })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Start date (ISO string)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'End date (ISO string)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pickups overview retrieved successfully',
+  })
   async getPickupsOverview(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
@@ -169,7 +215,10 @@ export class AdminController {
   @ApiOperation({ summary: 'Get contamination analysis report' })
   @ApiQuery({ name: 'startDate', required: false })
   @ApiQuery({ name: 'endDate', required: false })
-  @ApiResponse({ status: 200, description: 'Contamination report retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Contamination report retrieved successfully',
+  })
   async getContaminationReport(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
@@ -184,9 +233,16 @@ export class AdminController {
   // ==================== SYSTEM MANAGEMENT ====================
   @Get('system/logs')
   @ApiOperation({ summary: 'Get system logs' })
-  @ApiQuery({ name: 'level', required: false, enum: ['error', 'warn', 'info', 'debug'] })
+  @ApiQuery({
+    name: 'level',
+    required: false,
+    enum: ['error', 'warn', 'info', 'debug'],
+  })
   @ApiQuery({ name: 'limit', required: false, example: 100 })
-  @ApiResponse({ status: 200, description: 'System logs retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'System logs retrieved successfully',
+  })
   async getSystemLogs(
     @Query('level') level?: string,
     @Query('limit') limit = '100',
@@ -200,7 +256,10 @@ export class AdminController {
 
   @Post('system/cleanup')
   @ApiOperation({ summary: 'Run system cleanup tasks' })
-  @ApiResponse({ status: 200, description: 'Cleanup tasks completed successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Cleanup tasks completed successfully',
+  })
   async runSystemCleanup() {
     const result = await this.adminService.runSystemCleanup();
     return { status: 'success', message: 'Cleanup completed', data: result };
@@ -209,8 +268,15 @@ export class AdminController {
   // ==================== ANALYTICS ====================
   @Get('analytics/user-activity')
   @ApiOperation({ summary: 'Get user activity analytics' })
-  @ApiQuery({ name: 'period', required: false, enum: ['7d', '30d', '90d', '1y'] })
-  @ApiResponse({ status: 200, description: 'User activity analytics retrieved successfully' })
+  @ApiQuery({
+    name: 'period',
+    required: false,
+    enum: ['7d', '30d', '90d', '1y'],
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User activity analytics retrieved successfully',
+  })
   async getUserActivityAnalytics(@Query('period') period = '30d') {
     const analytics = await this.adminService.getUserActivityAnalytics(period);
     return { status: 'success', data: analytics };
@@ -218,8 +284,15 @@ export class AdminController {
 
   @Get('analytics/waste-trends')
   @ApiOperation({ summary: 'Get waste collection trends' })
-  @ApiQuery({ name: 'period', required: false, enum: ['7d', '30d', '90d', '1y'] })
-  @ApiResponse({ status: 200, description: 'Waste trends retrieved successfully' })
+  @ApiQuery({
+    name: 'period',
+    required: false,
+    enum: ['7d', '30d', '90d', '1y'],
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Waste trends retrieved successfully',
+  })
   async getWasteTrends(@Query('period') period = '30d') {
     const trends = await this.adminService.getWasteTrends(period);
     return { status: 'success', data: trends };
@@ -228,7 +301,10 @@ export class AdminController {
   // ==================== NOTIFICATIONS ====================
   @Post('notifications/broadcast')
   @ApiOperation({ summary: 'Send broadcast notification to all users' })
-  @ApiResponse({ status: 200, description: 'Broadcast notification sent successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Broadcast notification sent successfully',
+  })
   async sendBroadcastNotification(
     @Body('title') title: string,
     @Body('message') message: string,
@@ -242,6 +318,10 @@ export class AdminController {
       message,
       type: type || 'info',
     });
-    return { status: 'success', message: 'Broadcast notification sent', data: result };
+    return {
+      status: 'success',
+      message: 'Broadcast notification sent',
+      data: result,
+    };
   }
 }

@@ -4,9 +4,9 @@ import { FixContaminationScoresMigration } from '../src/migrations/fix-contamina
 
 async function runMigration() {
   console.log('🚀 Starting contamination scores fix migration...');
-  
+
   const app = await NestFactory.createApplicationContext(AppModule);
-  
+
   try {
     const migration = app.get(FixContaminationScoresMigration);
     await migration.run();

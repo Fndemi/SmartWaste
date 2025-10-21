@@ -17,10 +17,12 @@ export class FixContaminationScoresMigration {
     try {
       // Find all pickups with contamination scores > 1
       const invalidPickups = await this.pickupModel.find({
-        contaminationScore: { $gt: 1 }
+        contaminationScore: { $gt: 1 },
       });
 
-      this.logger.log(`Found ${invalidPickups.length} pickups with invalid contamination scores`);
+      this.logger.log(
+        `Found ${invalidPickups.length} pickups with invalid contamination scores`,
+      );
 
       let fixedCount = 0;
       for (const pickup of invalidPickups) {
@@ -45,10 +47,12 @@ export class FixContaminationScoresMigration {
         // Update the pickup
         await this.pickupModel.updateOne(
           { _id: pickup._id },
-          { $set: { contaminationScore: newScore } }
+          { $set: { contaminationScore: newScore } },
         );
 
-        this.logger.debug(`Fixed pickup ${pickup._id}: ${oldScore} -> ${newScore}`);
+        this.logger.debug(
+          `Fixed pickup ${pickup._id}: ${oldScore} -> ${newScore}`,
+        );
         fixedCount++;
       }
 
