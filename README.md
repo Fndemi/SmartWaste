@@ -1,6 +1,5 @@
 # 🗑️ SmartWaste - AI-Powered Waste Management System
 
-> **SmartWaste** is a comprehensive AI-powered waste management system that uses machine learning to detect contamination in waste streams, optimize collection routes, and provide intelligent waste management solutions for households, businesses, and municipalities.s
 
 ## 🌟 Overview
 
@@ -165,14 +164,11 @@ SmartWaste/
 ### 🏛️ Council
 - **Municipal Oversight** - Monitor city-wide waste management
 - **Analytics Dashboard** - Comprehensive waste management statistics
-- **Policy Management** - Implement waste management policies
-- **Compliance Monitoring** - Ensure regulatory compliance
+
 
 ### 👨‍💼 Admin
 - **System Administration** - Full system control and configuration
 - **User Management** - Manage all user accounts and permissions
-- **System Monitoring** - Monitor system health and performance
-- **Data Analytics** - Access comprehensive system analytics
 
 ## 🛠️ Technology Stack
 
