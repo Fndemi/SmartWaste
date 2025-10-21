@@ -3,7 +3,8 @@
 
 ## 🌟 Overview
 
-SmartWaste revolutionizes waste management by combining cutting-edge AI technology with user-friendly interfaces. The system automatically detects contamination levels in waste, sends real-time alerts to drivers, and provides intelligent recommendations for optimal waste disposal.
+SmartWaste is a web platform that uses a simple AI model to score waste contamination and streamline pickups between households, drivers, and recyclers.
+It helps reduce contamination by up to 30%, improving recycling efficiency and supporting Sustainable Cities (SDG 11).
 
 ### 🎯 Key Features
 
